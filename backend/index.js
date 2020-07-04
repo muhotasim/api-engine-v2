@@ -13,5 +13,8 @@ const onListen = () => {
   console.log(`server is running at http://localhost:${port}`);
 };
 app.listen(port, onListen);
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
 
 require('./server')(app);

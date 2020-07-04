@@ -146,4 +146,20 @@ module.exports = function (app, prefix) {
       });
     });
   });
+
+  app.post(prefix + '/:moduleName/update/:id', function (req, res) {
+    const moduleName = modulePrefix + req.params.moduleName;
+    console.log(req.body);
+    dbSdk.updateData(
+      moduleName,
+      req.body,
+      'WHERE id=' + req.params.id,
+      (returnData) => {
+        res.send({
+          status: 'success',
+          data: returnData,
+        });
+      }
+    );
+  });
 };
