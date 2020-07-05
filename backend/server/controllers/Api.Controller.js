@@ -1,13 +1,27 @@
 const dbSdk = require('../databaseSDK');
+const { uploadFilesAndGetUrlsWithKeyAndObject } = require('../common');
 const modulePrefix = 'api_engine_';
 module.exports = function (app, prefix) {
   app.post(prefix + '/module/create', function (req, res) {
-    dbSdk.createTable(modulePrefix + req.body.moduleName, function (d) {
-      res.send({
-        status: 'success',
-        data: [],
-      });
-    });
+    const moduleName = modulePrefix + req.body.moduleName;
+    dbSdk.useRawQuery(
+      `SELECT * FROM system WHERE name='${moduleName}'`,
+      (result) => {
+        if (result.length == 0) {
+          dbSdk.createTable(moduleName, function (d) {
+            res.send({
+              status: 'success',
+              data: [],
+            });
+          });
+        } else {
+          res.send({
+            status: 'failed',
+            data: [],
+          });
+        }
+      }
+    );
   });
   app.post(prefix + '/module/delete', function (req, res) {
     const params = req.body;
@@ -108,6 +122,26 @@ module.exports = function (app, prefix) {
       });
     });
   });
+  // middlewate for module structure
+  app.use(prefix + '/:moduleName', function (req, res, next) {
+    dbSdk.useRawQuery(
+      `SELECT * FROM system WHERE name='${
+        modulePrefix + req.params.moduleName
+      }'`,
+      (result) => {
+        if (result.length) {
+          let structure = JSON.parse(result[0].structure);
+          req.structure = structure;
+          next();
+        } else {
+          res.send({
+            status: 'failed',
+            data: [],
+          });
+        }
+      }
+    );
+  });
   // api query
   app.get(prefix + '/:moduleName/:id', function (req, res) {
     const params = req.params;
@@ -192,15 +226,32 @@ module.exports = function (app, prefix) {
     });
   });
   app.post(prefix + '/:moduleName/insert', function (req, res) {
-    const params = req.body;
+    let fileFields = [];
     const moduleName = modulePrefix + req.params.moduleName;
-    console.log(params);
-    dbSdk.insertData(moduleName, params, (returnData) => {
-      res.send({
-        status: 'success',
-        data: returnData,
-      });
+    req.structure.forEach((st) => {
+      if (st.fieldType == 'file') {
+        fileFields.push(st.name);
+      }
     });
+
+    uploadFilesAndGetUrlsWithKeyAndObject(
+      req.files,
+      moduleName,
+      fileFields,
+      (urls) => {
+        let params = req.body;
+        Object.keys(urls).forEach((key) => {
+          params[key] = urls[key];
+        });
+        console.log(params);
+        dbSdk.insertData(moduleName, params, (returnData) => {
+          res.send({
+            status: 'success',
+            data: returnData,
+          });
+        });
+      }
+    );
   });
   app.post(prefix + '/:moduleName/bulkInsert', function (req, res) {
     const data = req.body.data;

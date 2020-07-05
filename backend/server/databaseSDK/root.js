@@ -98,7 +98,6 @@ function deleteTable(tableName, callback) {
 
 function insertData(tableName, data, callback) {
   var sql = `INSERT INTO ${tableName} ${processJSONdata(data)}`;
-
   con.query(sql, function (err, result) {
     if (err) {
       callback(false);
@@ -121,7 +120,6 @@ function selectAllData(tableName, callback) {
 function useRawQuery(query, callback) {
   con.query(query, function (err, result) {
     if (err) {
-      console.log(err);
       callback(false);
     } else {
       callback(result);
