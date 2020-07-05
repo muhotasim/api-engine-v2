@@ -12,7 +12,7 @@ module.exports = function (app, prefix) {
   app.post(prefix + '/module/delete', function (req, res) {
     const params = req.body;
 
-    dbSdk.selectWithQuery(
+    dbSdk.useRawQuery(
       `SELECT * FROM system WHERE name='${modulePrefix + params.moduleName}'`,
       (result) => {
         let d = result[0];
@@ -29,7 +29,7 @@ module.exports = function (app, prefix) {
   });
   app.post(prefix + '/module/add-field', function (req, res) {
     const params = req.body;
-    dbSdk.selectWithQuery(
+    dbSdk.useRawQuery(
       `SELECT * FROM system WHERE name='${modulePrefix + params.moduleName}'`,
       (result) => {
         let field = JSON.parse(params.field);
@@ -67,7 +67,7 @@ module.exports = function (app, prefix) {
   });
   app.post(prefix + '/module/remove-field', function (req, res) {
     const params = req.body;
-    dbSdk.selectWithQuery(
+    dbSdk.useRawQuery(
       `SELECT * FROM system WHERE name='${modulePrefix + params.moduleName}'`,
       (result) => {
         let field = JSON.parse(params.field);
@@ -101,55 +101,64 @@ module.exports = function (app, prefix) {
   app.post(prefix + '/modules', function (req, res) {
     const params = req.body;
     let query = ' SELECT * FROM system  LIMIT 10 OFFSET 0';
-    dbSdk.selectWithQuery(query, (returnData) => {
+    dbSdk.useRawQuery(query, (returnData) => {
       res.send({
         status: 'success',
         data: returnData,
       });
     });
   });
-  app.get(prefix + '/:moduleName/:dataId', function (req, res) {
+  // api query
+  app.get(prefix + '/:moduleName/:id', function (req, res) {
     const params = req.params;
     const moduleName = modulePrefix + params.moduleName;
-    const dataId = params.dataId;
-    let query = ` SELECT * FROM ${moduleName} WHERE id=${dataId} LIMIT 1`;
-    dbSdk.selectWithQuery(query, (returnData) => {
+    const id = params.id;
+    let query = ` SELECT * FROM ${moduleName} WHERE id=${id} LIMIT 1`;
+    dbSdk.useRawQuery(query, (returnData) => {
       res.send({
         status: 'success',
         data: returnData,
       });
     });
   });
-  app.post(prefix + '/:moduleName/getData', function (req, res) {
+  app.post(prefix + '/:moduleName/get', function (req, res) {
     const params = req.body;
     const moduleName = modulePrefix + req.params.moduleName;
     const query = `SELECT ${
       params.select ? params.select : '*'
     } FROM ${moduleName} ${params.query ? params.query : ''}`;
-    dbSdk.selectWithQuery(query, (returnData) => {
+    dbSdk.useRawQuery(query, (returnData) => {
       res.send({
         status: 'success',
         data: returnData,
       });
     });
   });
-  app.post(prefix + '/:moduleName/deleteData', function (req, res) {
+  app.post(prefix + '/:moduleName/delete', function (req, res) {
     const params = req.body;
     const moduleName = modulePrefix + req.params.moduleName;
     const query = `DELETE  FROM ${moduleName} ${
       params.query ? params.query : ''
     }`;
-    dbSdk.selectWithQuery(query, (returnData) => {
+    dbSdk.useRawQuery(query, (returnData) => {
       res.send({
         status: 'success',
         data: returnData,
       });
     });
   });
-
+  app.post(prefix + '/:moduleName/delete/:id', function (req, res) {
+    const moduleName = modulePrefix + req.params.moduleName;
+    const query = `DELETE  FROM ${moduleName} WHERE id=${req.params.id}`;
+    dbSdk.useRawQuery(query, (returnData) => {
+      res.send({
+        status: 'success',
+        data: returnData,
+      });
+    });
+  });
   app.post(prefix + '/:moduleName/update/:id', function (req, res) {
     const moduleName = modulePrefix + req.params.moduleName;
-    console.log(req.body);
     dbSdk.updateData(
       moduleName,
       req.body,
@@ -162,4 +171,54 @@ module.exports = function (app, prefix) {
       }
     );
   });
+  app.post(prefix + '/:moduleName/update', function (req, res) {
+    const moduleName = modulePrefix + req.params.moduleName;
+    dbSdk.updateData(moduleName, req.body, req.params.query, (returnData) => {
+      res.send({
+        status: 'success',
+        data: returnData,
+      });
+    });
+  });
+  app.post(prefix + '/:moduleName/delete/:id', function (req, res) {
+    const params = req.body;
+    const moduleName = modulePrefix + req.params.moduleName;
+    const query = `DELETE  FROM ${moduleName} WHERE id=${req.params.id}`;
+    dbSdk.useRawQuery(query, (returnData) => {
+      res.send({
+        status: 'success',
+        data: returnData,
+      });
+    });
+  });
+  app.post(prefix + '/:moduleName/insert', function (req, res) {
+    const params = req.body;
+    const moduleName = modulePrefix + req.params.moduleName;
+    console.log(params);
+    dbSdk.insertData(moduleName, params, (returnData) => {
+      res.send({
+        status: 'success',
+        data: returnData,
+      });
+    });
+  });
+  app.post(prefix + '/:moduleName/bulkInsert', function (req, res) {
+    const data = req.body.data;
+    const moduleName = modulePrefix + req.params.moduleName;
+    dbSdk.bulkInsert(moduleName, JSON.parse(data), (returnData) => {
+      if (returnData) {
+        res.send({
+          status: 'success',
+          data: returnData,
+        });
+      } else {
+        res.send({
+          status: 'failed',
+          data: returnData,
+        });
+      }
+    });
+  });
+
+  // api query
 };

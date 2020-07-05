@@ -118,7 +118,7 @@ function selectAllData(tableName, callback) {
   });
 }
 
-function selectWithQuery(query, callback) {
+function useRawQuery(query, callback) {
   con.query(query, function (err, result) {
     if (err) {
       console.log(err);
@@ -170,15 +170,33 @@ function updateData(tableName, data, query, callback) {
   });
 }
 
+function bulkInsert(tableName, data, callback) {
+  let keys = data[0];
+  let d = Object.keys(keys);
+  var values = [];
+  data.forEach((dataVal) => {
+    values.push(Object.values(dataVal));
+  });
+  var sql = 'INSERT INTO ' + tableName + ' (' + d.join(',') + ') VALUES ?';
+  con.query(sql, [values], function (err) {
+    if (err) {
+      callback(fasle);
+    } else {
+      callback(true);
+    }
+  });
+}
+
 module.exports = {
   updateData,
   deleteTable,
   deleteWithQuery,
   deleteAllWithQuery,
-  selectWithQuery,
+  useRawQuery,
   selectAllData,
   insertData,
   createTable,
   addField,
   removeField,
+  bulkInsert,
 };
